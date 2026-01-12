@@ -37,6 +37,7 @@ cc_library(
     deps = [
         ":breakdown_generator",
         ":metrics_utils",
+        ":progress_bar_utils",    # add
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
