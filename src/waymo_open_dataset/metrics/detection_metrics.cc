@@ -16,15 +16,18 @@ limitations under the License.
 #include "waymo_open_dataset/metrics/detection_metrics.h"
 
 #include <algorithm>
+#include <chrono>
 #include <iterator>
 #include <memory>
 #include <string>
 #include <utility>
 
+
 #include <glog/logging.h>
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/matcher.h"
 #include "waymo_open_dataset/metrics/metrics_utils.h"
+#include "waymo_open_dataset/metrics/progress_bar_utils.h" // add
 #include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 
@@ -405,6 +408,12 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
   const Config config_copy = config.score_cutoffs_size() > 0
                                  ? config
                                  : EstimateScoreCutoffs(config, pds, gts);
+
+  // vvv 追加ここから vvv
+  auto start_time = std::chrono::steady_clock::now();
+  ShowProgressBar("ComputeMetrics", 0, 0, 0, num_frames);
+  // ^^^ 追加ここまで ^^^
+
   for (int i = 0; i < num_frames; ++i) {
     if (i == 0) {
       measurements = ComputeDetectionMeasurements(config_copy, pds[i], gts[i],
@@ -415,7 +424,23 @@ std::vector<DetectionMetrics> ComputeDetectionMetrics(
                                        custom_iou_func),
           &measurements);
     }
+
+    // vvv 追加ここから vvv
+    if (i % 5 == 0 || i == num_frames - 1) {
+      auto current_time = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed = current_time - start_time;
+      ShowProgressBar("ComputeMetrics",
+                      static_cast<float>(i + 1) / num_frames, 
+                      elapsed.count(), 
+                      i + 1, 
+                      num_frames);
+    }
+    // ^^^ 追加ここまで ^^^
   }
+  // vvv 追加ここから vvv
+  std::cout << std::endl;
+  // ^^^ 追加ここまで ^^^
+
   std::vector<DetectionMetrics> metrics;
   metrics.reserve(measurements.size());
   for (auto& m : measurements) {

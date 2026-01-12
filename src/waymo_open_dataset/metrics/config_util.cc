@@ -22,6 +22,7 @@ limitations under the License.
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/breakdown_generator.h"
 #include "waymo_open_dataset/metrics/metrics_utils.h"
+#include "waymo_open_dataset/metrics/progress_bar_utils.h" // add
 #include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/motion_metrics.pb.h"
 #include "waymo_open_dataset/protos/scenario.pb.h"
@@ -31,6 +32,12 @@ namespace open_dataset {
 
 std::vector<std::string> GetBreakdownNamesFromConfig(const Config& config) {
   std::vector<std::string> names;
+
+  // vvv 追加ここから vvv
+  const int num_generators = config.breakdown_generator_ids_size();
+  auto      start_time     = std::chrono::steady_clock::now();
+  // ^^^ 追加ここまで ^^^
+
   for (int i = 0, sz = config.breakdown_generator_ids_size(); i < sz; ++i) {
     const std::unique_ptr<BreakdownGenerator> breakdown_generator =
         BreakdownGenerator::Create(config.breakdown_generator_ids(i));
@@ -43,7 +50,20 @@ std::vector<std::string> GetBreakdownNamesFromConfig(const Config& config) {
                                      Label::DifficultyLevel_Name(dl)));
       }
     }
+
+    // vvv 追加ここから vvv
+    auto current_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = current_time - start_time;
+    ShowProgressBar("Names", 
+                    static_cast<float>(i + 1) / num_generators, 
+                    elapsed.count(), 
+                    i + 1, 
+                    num_generators);
+    // ^^^ 追加ここまで ^^^
   }
+  // vvv 追加ここから vvv
+  std::cout << std::endl;
+  // ^^^ 追加ここまで ^^^
   return names;
 }
 

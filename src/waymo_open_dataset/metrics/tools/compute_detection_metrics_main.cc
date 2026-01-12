@@ -90,6 +90,7 @@ limitations under the License.
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/config_util.h"
 #include "waymo_open_dataset/metrics/detection_metrics.h"
+#include "waymo_open_dataset/metrics/progress_bar_utils.h" // add
 #include "waymo_open_dataset/protos/breakdown.pb.h"
 #include "waymo_open_dataset/protos/metrics.pb.h"
 
