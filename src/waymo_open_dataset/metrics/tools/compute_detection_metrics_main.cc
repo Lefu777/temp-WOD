@@ -334,7 +334,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
 
   // vvv 追加ここから vvv
   std::cout << std::endl;
-  std::cout << "Computing metrics (No progress bar possible for this step)..." << std::endl;
+  // std::cout << "Computing metrics (No progress bar possible for this step)..." << std::endl;
   // ^^^ 追加ここまで ^^^
 
   const Config config = GetConfig();
