@@ -81,6 +81,11 @@ limitations under the License.
 #include <unordered_map>
 #include <utility>
 
+// vvv 追加ここから vvv
+#include <iomanip> 
+#include <chrono>
+// ^^^ 追加ここまで ^^^
+
 #include "absl/strings/str_cat.h"
 #include "waymo_open_dataset/label.pb.h"
 #include "waymo_open_dataset/metrics/config_util.h"
@@ -91,6 +96,42 @@ limitations under the License.
 namespace waymo {
 namespace open_dataset {
 namespace {
+
+
+// vvv 追加ここから vvv
+
+// Progress Bar with ETA logic
+void ShowProgressBar(const std::string& task_name, float progress, double elapsed_seconds, size_t processed, size_t total) {
+    int barWidth = 40; // Slightly reduced width to make room for the task name
+    
+    // Print task name with fixed width (e.g., 15 characters) to keep bars aligned
+    std::cout << std::left << std::setw(10) << task_name << " [";
+    
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+
+    // Calculate Remaining Time
+    std::string eta_str = "Calculating...";
+    if (processed > 0 && progress > 0) {
+        double total_expected_time = elapsed_seconds / progress;
+        int remaining_seconds = static_cast<int>(total_expected_time - elapsed_seconds);
+        
+        int mins = remaining_seconds / 60;
+        int secs = remaining_seconds % 60;
+        eta_str = std::to_string(mins) + "m " + std::to_string(secs) + "s";
+    }
+
+    std::cout << "] " << int(progress * 100.0) << "% | ETA: " << eta_str 
+              << "    \r"; 
+    std::cout.flush();
+}
+
+// ^^^ 追加ここまで ^^^
+
 // Generates a simple metrics config with one difficulty level (LEVEL_2 assumed)
 // for each breakdown.
 
@@ -134,9 +175,18 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     return;
   }
 
+  // --- Loop 1: Set Detection Difficulty ---
+
   // Set detection difficulty.
   Objects gt_objects;
   constexpr int kDetectionLevel2NumPointsThreshold = 5;
+
+  // vvv 追加ここから vvv 
+  size_t diff_total = gt_objects_ori.objects_size();
+  size_t diff_count = 0;
+  auto   diff_start = std::chrono::steady_clock::now();
+  // ^^^ 追加ここまで ^^^
+
   for (auto& o : *gt_objects_ori.mutable_objects()) {
     if (o.object().num_lidar_points_in_box() <= 0) continue;
     // Decide detection difficulty by the number of points inside the box if the
@@ -150,7 +200,19 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
               : Label::LEVEL_1);
     }
     *gt_objects.add_objects() = o;
+
+    // vvv 追加ここから vvv 
+    diff_count++;
+    if (diff_count % 500 == 0 || diff_count == diff_total) {
+      auto now = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed = now - diff_start;
+      ShowProgressBar("Set Difficulty", static_cast<float>(diff_count) / diff_total, elapsed.count(), diff_count, diff_total);
+    }
+    // ^^^ 追加ここまで ^^^
   }
+  // vvv 追加ここから vvv 
+  std::cout << std::endl;
+  // ^^^ 追加ここまで ^^^
 
   std::map<std::pair<std::string, int64_t>, std::vector<Object>> pd_map;
   std::map<std::pair<std::string, int64_t>, std::vector<Object>> gt_map;
@@ -160,21 +222,73 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
         absl::StrCat(object.context_name(), "_", object.camera_name()),
         object.frame_timestamp_micros());
   };
+
+  // --- Loop 2: Map Predictions ---
+
+  // vvv 追加ここから vvv 
+  size_t pd_total = pd_objects.objects_size();
+  size_t pd_count = 0;
+  auto   pd_start = std::chrono::steady_clock::now();
+  // ^^^ 追加ここまで ^^^
+
   for (auto& o : *pd_objects.mutable_objects()) {
     const auto key = get_key(o);
     pd_map[key].push_back(std::move(o));
     all_example_keys.insert(key);
+
+    // vvv 追加ここから vvv 
+    pd_count++;
+    if (pd_count % 100 == 0 || pd_count == pd_total) {
+      auto now = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed = now - pd_start;
+      ShowProgressBar("Map PD", static_cast<float>(pd_count) / pd_total, elapsed.count(), pd_count, pd_total);
+    }
+    // ^^^ 追加ここまで ^^^
   }
+  // vvv 追加ここから vvv 
+  std::cout << std::endl;
+  // ^^^ 追加ここまで ^^^
+
+  // --- Loop 3: Map Ground Truths ---
+  
+  // vvv 追加ここから vvv 
+  size_t gt_total = gt_objects.objects_size();
+  size_t gt_count = 0;
+  auto   gt_start = std::chrono::steady_clock::now();
+  // ^^^ 追加ここまで ^^^
+
   for (auto& o : *gt_objects.mutable_objects()) {
     const auto key = get_key(o);
     gt_map[key].push_back(std::move(o));
     all_example_keys.insert(key);
+
+    // vvv 追加ここから vvv 
+    gt_count++;
+    if (gt_count % 100 == 0 || gt_count == gt_total) {
+      auto now = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed = now - gt_start;
+      ShowProgressBar("Map GT", static_cast<float>(gt_count) / gt_total, elapsed.count(), gt_count, gt_total);
+    }
+    // ^^^ 追加ここまで ^^^
   }
+  
+  // vvv 追加ここから vvv 
+  std::cout << std::endl;
+  // ^^^ 追加ここまで ^^^
 
   std::cout << all_example_keys.size() << " examples found.\n";
 
+  // --- Loop 4: Prepare Data Alignment ---
+
   std::vector<std::vector<Object>> pds;
   std::vector<std::vector<Object>> gts;
+
+  // vvv 追加ここから vvv 
+  size_t total_keys      = all_example_keys.size();
+  size_t processed_count = 0;
+  auto   start_time      = std::chrono::steady_clock::now();
+  // ^^^ 追加ここまで ^^^
+
   for (auto& example_key : all_example_keys) {
     auto gt_it = gt_map.find(example_key);
     if (gt_it == gt_map.end()) {
@@ -188,7 +302,28 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
     } else {
       pds.push_back(std::move(pd_it->second));
     }
+
+    // vvv 追加ここから vvv
+    processed_count++;
+    if (processed_count % 10 == 0 || processed_count == total_keys) {
+      auto current_time = std::chrono::steady_clock::now();
+      std::chrono::duration<double> elapsed = current_time - start_time;
+      
+      ShowProgressBar(
+        "Aligning",
+        static_cast<float>(processed_count) / total_keys, 
+        elapsed.count(), 
+        processed_count, 
+        total_keys
+      );
+    }
+    // ^^^ 追加ここまで ^^^
   }
+
+  // vvv 追加ここから vvv
+  std::cout << std::endl;
+  std::cout << "Computing metrics (No progress bar possible for this step)..." << std::endl;
+  // ^^^ 追加ここまで ^^^
 
   const Config config = GetConfig();
 
