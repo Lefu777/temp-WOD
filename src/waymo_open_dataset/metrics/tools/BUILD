@@ -26,6 +26,7 @@ cc_binary(
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/metrics:config_util",
         "//waymo_open_dataset/metrics:detection_metrics",
+        "//waymo_open_dataset/metrics:progress_bar_utils",    # add
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
         "@com_google_absl//absl/strings",

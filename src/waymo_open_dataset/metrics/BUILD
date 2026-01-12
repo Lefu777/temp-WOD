@@ -7,6 +7,14 @@ package(
 
 licenses(["notice"])
 
+# vvv 追加ここから vvv
+cc_library(
+    name = "progress_bar_utils",
+    hdrs = ["progress_bar_utils.h"],
+    visibility = ["//visibility:public"],
+)
+# ^^^ 追加ここまで ^^^
+
 cc_library(
     name = "breakdown_generator",
     srcs = ["breakdown_generator.cc"],
@@ -126,6 +134,7 @@ cc_library(
     deps = [
         ":matcher",
         ":metrics_utils",
+        ":progress_bar_utils",    # add
         "//waymo_open_dataset:label_cc_proto",
         "//waymo_open_dataset/protos:breakdown_cc_proto",
         "//waymo_open_dataset/protos:metrics_cc_proto",
