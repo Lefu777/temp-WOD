@@ -164,11 +164,18 @@ Config GetConfig() {
 
 // Computes the detection metrics.
 void Compute(const std::string& pd_str, const std::string& gt_str) {
+  // vvv 追加ここから vvv
+  std::cout << "read pd_objects (No progress bar possible for this step)..." << std::endl;
+  // ^^^ 追加ここまで ^^^
   Objects pd_objects;
   if (!pd_objects.ParseFromString(pd_str)) {
     std::cerr << "Failed to parse predictions.";
     return;
   }
+  
+  // vvv 追加ここから vvv
+  std::cout << "read gt_objects (No progress bar possible for this step)..." << std::endl;
+  // ^^^ 追加ここまで ^^^
   Objects gt_objects_ori;
   if (!gt_objects_ori.ParseFromString(gt_str)) {
     std::cerr << "Failed to parse ground truths.";
@@ -185,6 +192,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   size_t diff_total = gt_objects_ori.objects_size();
   size_t diff_count = 0;
   auto   diff_start = std::chrono::steady_clock::now();
+  ShowProgressBar("Set Difficulty", 0, 0, diff_count, diff_total);
   // ^^^ 追加ここまで ^^^
 
   for (auto& o : *gt_objects_ori.mutable_objects()) {
@@ -229,6 +237,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   size_t pd_total = pd_objects.objects_size();
   size_t pd_count = 0;
   auto   pd_start = std::chrono::steady_clock::now();
+  ShowProgressBar("Map PD", 0, 0, pd_count, pd_total);
   // ^^^ 追加ここまで ^^^
 
   for (auto& o : *pd_objects.mutable_objects()) {
@@ -255,6 +264,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   size_t gt_total = gt_objects.objects_size();
   size_t gt_count = 0;
   auto   gt_start = std::chrono::steady_clock::now();
+  ShowProgressBar("Map GT", 0, 0, gt_count, gt_total);
   // ^^^ 追加ここまで ^^^
 
   for (auto& o : *gt_objects.mutable_objects()) {
@@ -287,6 +297,7 @@ void Compute(const std::string& pd_str, const std::string& gt_str) {
   size_t total_keys      = all_example_keys.size();
   size_t processed_count = 0;
   auto   start_time      = std::chrono::steady_clock::now();
+  ShowProgressBar("Aligning", 0, 0, processed_count, total_keys);
   // ^^^ 追加ここまで ^^^
 
   for (auto& example_key : all_example_keys) {
@@ -370,7 +381,15 @@ int main(int argc, char** argv) {
 
   const char* pd_filename = argv[1];
   const char* gt_filename = argv[2];
+
+  // vvv 追加ここから vvv
+  std::cout << "read pd_file (No progress bar possible for this step)..." << std::endl;
+  // ^^^ 追加ここまで ^^^
   const std::string pd_str = ReadFileToString(pd_filename);
+  
+  // vvv 追加ここから vvv
+  std::cout << "read gt_file (No progress bar possible for this step)..." << std::endl;
+  // ^^^ 追加ここまで ^^^
   const std::string gt_str = ReadFileToString(gt_filename);
   if (gt_str.empty()) {
     std::cerr << "Must specify ground truth.\n";
